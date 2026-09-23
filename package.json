@@ -1,0 +1,30 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev --filter=native",
+    "build": "turbo run build",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "typescheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "@types/minimatch": "^6.0.0",
+    "prettier": "^3.1.1",
+    "turbo": "^2.10.13"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "name": "with-react-native-web",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "10.17.1"
+    }
+  },
+  "pnpm": {
+    "overrides": {
+      "lightningcss": "1.30.1"
+    }
+  }
+}
