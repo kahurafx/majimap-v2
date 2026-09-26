@@ -15,9 +15,12 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.turbo.example"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +33,9 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": ["expo-router", "@maplibre/maplibre-react-native"]
+    "plugins": [
+      "expo-router",
+      "@maplibre/maplibre-react-native"
+    ]
   }
 }

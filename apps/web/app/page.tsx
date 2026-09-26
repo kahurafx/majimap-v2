@@ -1,11 +1,10 @@
 import {NetworkMap} from "@/components/map/network-map";
-import AnadaMap from "@/app/_components/AnadaMap";
 
-export default function Home() {
+
+export default function MapPage() {
     return (
-        <div>
-            {/*<NetworkMap />*/}
-            <AnadaMap/>
+        <div className="h-svh w-full">
+            <NetworkMap />
         </div>
     );
 }
