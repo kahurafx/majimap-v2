@@ -1,32 +1,65 @@
-# Turborepo react-native starter
+# Majimap
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+A GIS platform for managing a water utility's distribution network —
+reservoirs, pumping stations, valves, junctions, meters, hydrants, and the
+pipes connecting them. Visual + reporting focused: this is not a
+work-order/ticketing system. Field technicians capture and update asset
+data from a mobile app designed to keep working through intermittent or
+weekly connectivity.
 
-## Using this example
+## Layout
 
-Run the following command:
+This is a pnpm + Turborepo monorepo.
+
+apps/
+web/ Next.js dashboard, network map, and reporting (office/admin use)
+native/ Expo app for field technicians (map, asset capture, offline sync)
+packages/
+shared-types/ Zod schemas + inferred types shared by both apps (source of truth
+for node/pipe/condition/role shapes, and shared design constants
+like CONDITION_HEX)
+db/ Database layer — stub, not wired up yet
+auth/ Auth (Better Auth) — stub, not wired up yet
+api/ tRPC API layer — stub, not wired up yet
+
+
+Both apps currently run against local mock data in `apps/*/lib/mock-data.ts`
+while `packages/db|auth|api` are built out.
+
+## Stack
+
+- **Web**: Next.js 16, shadcn (Base UI-based generation), Tailwind v4, MapLibre GL JS
+- **Native**: Expo (SDK 57) + Expo Router, NativeWind, `@maplibre/maplibre-react-native`
+  (requires a custom dev client — this library does not run in Expo Go)
+- **Shared**: TypeScript, Zod
+
+⚠️ Several of the above are on newer major versions than most training data
+or general documentation reflects (Next 16, a Base UI–flavored shadcn, RN
+0.86, TypeScript 6). When in doubt, check the version actually installed
+before assuming an API — see `apps/web/AGENTS.md`.
+
+## Getting started
 
 ```sh
-npx create-turbo@latest -e with-react-native-web
+pnpm install
+pnpm dev          # runs web + native together
+pnpm dev:web      # web only — http://localhost:3000
+pnpm dev:native   # native only — scan the QR with a custom dev client
 ```
 
-## What's inside?
+Building the native dev client (required once, and again after adding any
+package with native code):
 
-This Turborepo includes the following packages/apps:
+```sh
+cd apps/native
+npx expo prebuild --clean
+npx expo run:android   # or run:ios
+```
 
-### Apps and Packages
+## Status
 
-- `native`: a [react-native](https://reactnative.dev/) app built with [expo](https://docs.expo.dev/)
-- `web`: a [Next.js](https://nextjs.org/) app built with [react-native-web](https://necolas.github.io/react-native-web/)
-- `@repo/ui`: a stub [react-native](https://reactnative.dev/) component library shared by both `web` and `native` applications
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [Expo](https://docs.expo.dev/) for native development
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [Prettier](https://prettier.io) for code formatting
+Actively in progress. Web has a dashboard, network map (with drawable
+zone boundaries), assets list/detail, and an admin users page. Native has
+sign-in and a map screen with the same zone/asset features. Not yet built:
+real auth, a real database, the add-node/valve/pipeline capture flow, and
+the offline sync engine itself.

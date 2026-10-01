@@ -12,7 +12,8 @@ import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import * as Location from "expo-location";
 import { Search, Cloud, LocateFixed, Navigation } from "lucide-react-native";
 import { mockNodes, CENTER } from "../../lib/mock-data";
-import type { NodeType, NetworkNode, Condition } from "@majimap/shared-types";
+import { CONDITION_HEX } from "@majimap/shared-types";
+import type { NodeType, NetworkNode } from "@majimap/shared-types";
 
 const LIGHT_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
@@ -24,14 +25,6 @@ const TYPE_COLOR: Record<NodeType, string> = {
     junction: "#FACC15",
     meter: "#67E8F9",
     hydrant: "#FB7185",
-};
-
-const CONDITION_COLOR: Record<Condition, string> = {
-    good: "#4ADE80",
-    fair: "#FBBF24",
-    poor: "#FB923C",
-    critical: "#F87171",
-    unknown: "#94A3B8",
 };
 
 const PILLS: { key: "all" | NodeType; label: string }[] = [
@@ -142,11 +135,11 @@ export default function MapScreen() {
                                 "circle-color": [
                                     "match",
                                     ["get", "condition"],
-                                    "good", CONDITION_COLOR.good,
-                                    "fair", CONDITION_COLOR.fair,
-                                    "poor", CONDITION_COLOR.poor,
-                                    "critical", CONDITION_COLOR.critical,
-                                    CONDITION_COLOR.unknown,
+                                    "good", CONDITION_HEX.good,
+                                    "fair", CONDITION_HEX.fair,
+                                    "poor", CONDITION_HEX.poor,
+                                    "critical", CONDITION_HEX.critical,
+                                    CONDITION_HEX.unknown,
                                 ],
                                 "circle-stroke-width": 1.5,
                                 "circle-stroke-color": "#ffffff",
@@ -175,8 +168,8 @@ export default function MapScreen() {
                                     <Text className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{selected.name}</Text>
                                     <Text className="text-[11px] text-zinc-500 dark:text-zinc-400">340m away</Text>
                                 </View>
-                                <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: CONDITION_COLOR[selected.condition] + "29" }}>
-                                    <Text className="text-[9.5px] font-bold capitalize" style={{ color: CONDITION_COLOR[selected.condition] }}>
+                                <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: CONDITION_HEX[selected.condition] + "29" }}>
+                                    <Text className="text-[9.5px] font-bold capitalize" style={{ color: CONDITION_HEX[selected.condition] }}>
                                         {selected.condition}
                                     </Text>
                                 </View>

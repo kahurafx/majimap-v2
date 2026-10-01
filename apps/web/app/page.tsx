@@ -1,10 +1,7 @@
-import {NetworkMap} from "@/components/map/network-map";
-
+import {redirect} from "next/navigation";
 
 export default function MapPage() {
     return (
-        <div className="h-svh w-full">
-            <NetworkMap />
-        </div>
+        redirect(`/dashboard`)
     );
 }

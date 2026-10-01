@@ -33,6 +33,15 @@
         glibc
         ncurses
         freetype
+
+        # Font & UI rendering libraries required by Java/Gradle
+        fontconfig
+        pango
+        cairo
+        xorg.libX11
+        xorg.libXext
+        xorg.libXrender
+        xorg.libXtst
       ];
 
       # Bind environment variables strictly inside the shell

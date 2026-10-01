@@ -1,22 +1,24 @@
 import type { Condition } from "@majimap/shared-types";
+import { CONDITION_HEX } from "@majimap/shared-types";
 import { Badge } from "@/components/ui/badge";
 
 const LABELS: Record<Condition, string> = {
-  good: "Good",
-  fair: "Fair",
-  poor: "Poor",
-  critical: "Critical",
-  unknown: "Unknown",
+    good: "Good",
+    fair: "Fair",
+    poor: "Poor",
+    critical: "Critical",
+    unknown: "Unknown",
 };
 
 export function ConditionBadge({ condition }: { condition: Condition }) {
-  return <Badge variant={condition}>{LABELS[condition]}</Badge>;
+    const color = CONDITION_HEX[condition];
+    return (
+        <Badge style={{ backgroundColor: `${color}1a`, color, borderColor: `${color}33` }}>
+            {LABELS[condition]}
+        </Badge>
+    );
 }
 
-export const CONDITION_HEX: Record<Condition, string> = {
-  good: "#3f7a53",
-  fair: "#c99a3a",
-  poor: "#bb6a35",
-  critical: "#a3453b",
-  unknown: "#8b93a1",
-};
+// Re-exported so existing `@/components/condition-badge` imports keep working —
+// the values themselves now live in @majimap/shared-types so native can use them too.
+export { CONDITION_HEX };

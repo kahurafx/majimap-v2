@@ -4,6 +4,10 @@ import type {
     User,
     ValveStateLog,
     ConditionLog,
+    Structure,
+    Dma,
+    Subnetwork,
+    Tier,
 } from "@majimap/shared-types";
 
 // Roughly the Kilimani / Kileleshwa area of Nairobi — used as a plausible
@@ -89,24 +93,23 @@ export const mockUsers: User[] = [
 // Offsets in degrees (~roughly 100–250m apart) laid out as a ring with one
 // branch, so the trace demo has an actual cycle to protect against.
 export const mockNodes: NetworkNode[] = [
-    { id: "n-res-1", type: "reservoir", name: "Kileleshwa Reservoir", location: { lat: CENTER.lat + 0.010, lng: CENTER.lng - 0.004 }, condition: "good", isOpen: null, installedAt: daysAgo(3600), lastInspectedAt: daysAgo(30) },
-    { id: "n-pump-1", type: "pumping_station", name: "Kileleshwa Booster PS", location: { lat: CENTER.lat + 0.007, lng: CENTER.lng - 0.002 }, condition: "good", isOpen: null, installedAt: daysAgo(3200), lastInspectedAt: daysAgo(14) },
-    { id: "n-valve-1", type: "valve", name: "Valve KLS-01", location: { lat: CENTER.lat + 0.004, lng: CENTER.lng }, condition: "good", isOpen: true, installedAt: daysAgo(2800), lastInspectedAt: daysAgo(60) },
-    { id: "n-junc-1", type: "junction", name: "Junction J-14", location: { lat: CENTER.lat + 0.001, lng: CENTER.lng + 0.002 }, condition: "fair", isOpen: null, installedAt: daysAgo(2800), lastInspectedAt: daysAgo(90) },
-    { id: "n-valve-2", type: "valve", name: "Valve KLS-02", location: { lat: CENTER.lat - 0.002, lng: CENTER.lng + 0.004 }, condition: "fair", isOpen: true, installedAt: daysAgo(2600), lastInspectedAt: daysAgo(200) },
-    { id: "n-hyd-1", type: "hydrant", name: "Hydrant H-07", location: { lat: CENTER.lat - 0.001, lng: CENTER.lng + 0.006 }, condition: "poor", isOpen: null, installedAt: daysAgo(2400), lastInspectedAt: daysAgo(400) },
-    { id: "n-junc-2", type: "junction", name: "Junction J-15", location: { lat: CENTER.lat - 0.005, lng: CENTER.lng + 0.003 }, condition: "good", isOpen: null, installedAt: daysAgo(2400), lastInspectedAt: daysAgo(45) },
-    { id: "n-meter-1", type: "meter", name: "Bulk Meter M-22", location: { lat: CENTER.lat - 0.006, lng: CENTER.lng + 0.001 }, condition: "good", isOpen: null, installedAt: daysAgo(1900), lastInspectedAt: daysAgo(20) },
-    { id: "n-valve-3", type: "valve", name: "Valve KLS-03", location: { lat: CENTER.lat - 0.008, lng: CENTER.lng - 0.001 }, condition: "critical", isOpen: false, installedAt: daysAgo(1900), lastInspectedAt: daysAgo(500) },
-    { id: "n-junc-3", type: "junction", name: "Junction J-16", location: { lat: CENTER.lat - 0.006, lng: CENTER.lng - 0.004 }, condition: "fair", isOpen: null, installedAt: daysAgo(1700), lastInspectedAt: daysAgo(70) },
-    { id: "n-hyd-2", type: "hydrant", name: "Hydrant H-08", location: { lat: CENTER.lat - 0.003, lng: CENTER.lng - 0.006 }, condition: "good", isOpen: null, installedAt: daysAgo(1700), lastInspectedAt: daysAgo(10) },
-    { id: "n-valve-4", type: "valve", name: "Valve KLS-04", location: { lat: CENTER.lat, lng: CENTER.lng - 0.006 }, condition: "good", isOpen: true, installedAt: daysAgo(1500), lastInspectedAt: daysAgo(33) },
-    { id: "n-junc-4", type: "junction", name: "Junction J-17", location: { lat: CENTER.lat + 0.003, lng: CENTER.lng - 0.005 }, condition: "good", isOpen: null, installedAt: daysAgo(1500), lastInspectedAt: daysAgo(15) },
-    // Branch off the ring, terminating at a dead-end meter + hydrant.
-    { id: "n-valve-5", type: "valve", name: "Valve KLS-05 (branch)", location: { lat: CENTER.lat - 0.001, lng: CENTER.lng - 0.001 }, condition: "fair", isOpen: true, installedAt: daysAgo(1200), lastInspectedAt: daysAgo(100) },
-    { id: "n-meter-2", type: "meter", name: "Bulk Meter M-23", location: { lat: CENTER.lat - 0.003, lng: CENTER.lng }, condition: "poor", isOpen: null, installedAt: daysAgo(1200), lastInspectedAt: daysAgo(310) },
-    { id: "n-hyd-3", type: "hydrant", name: "Hydrant H-09", location: { lat: CENTER.lat - 0.004, lng: CENTER.lng + 0.001 }, condition: "unknown", isOpen: null, installedAt: daysAgo(900), lastInspectedAt: null },
-    { id: "n-pump-2", type: "pumping_station", name: "Riverside Booster PS", location: { lat: CENTER.lat + 0.002, lng: CENTER.lng + 0.005 }, condition: "fair", isOpen: null, installedAt: daysAgo(2000), lastInspectedAt: daysAgo(50) },
+    { id: "n-res-1", type: "reservoir", name: "Kileleshwa Reservoir", location: { lat: CENTER.lat + 0.010, lng: CENTER.lng - 0.004 }, condition: "good", isOpen: null, structureId: null, installedAt: daysAgo(3600), lastInspectedAt: daysAgo(30) },
+    { id: "n-pump-1", type: "pumping_station", name: "Kileleshwa Booster PS", location: { lat: CENTER.lat + 0.007, lng: CENTER.lng - 0.002 }, condition: "good", isOpen: null, structureId: null, installedAt: daysAgo(3200), lastInspectedAt: daysAgo(14) },
+    { id: "n-valve-1", type: "valve", name: "Valve KLS-01", location: { lat: CENTER.lat + 0.004, lng: CENTER.lng }, condition: "good", isOpen: true, structureId: "s-vault-1", installedAt: daysAgo(2800), lastInspectedAt: daysAgo(60) },
+    { id: "n-junc-1", type: "junction", name: "Junction J-14", location: { lat: CENTER.lat + 0.001, lng: CENTER.lng + 0.002 }, condition: "fair", isOpen: null, structureId: null, installedAt: daysAgo(2800), lastInspectedAt: daysAgo(90) },
+    { id: "n-valve-2", type: "valve", name: "Valve KLS-02", location: { lat: CENTER.lat - 0.002, lng: CENTER.lng + 0.004 }, condition: "fair", isOpen: true, structureId: null, installedAt: daysAgo(2600), lastInspectedAt: daysAgo(200) },
+    { id: "n-hyd-1", type: "hydrant", name: "Hydrant H-07", location: { lat: CENTER.lat - 0.001, lng: CENTER.lng + 0.006 }, condition: "poor", isOpen: null, structureId: null, installedAt: daysAgo(2400), lastInspectedAt: daysAgo(400) },
+    { id: "n-junc-2", type: "junction", name: "Junction J-15", location: { lat: CENTER.lat - 0.005, lng: CENTER.lng + 0.003 }, condition: "good", isOpen: null, structureId: "s-manhole-1", installedAt: daysAgo(2400), lastInspectedAt: daysAgo(45) },
+    { id: "n-meter-1", type: "meter", name: "Bulk Meter M-22", location: { lat: CENTER.lat - 0.006, lng: CENTER.lng + 0.001 }, condition: "good", isOpen: null, structureId: "s-chamber-1", installedAt: daysAgo(1900), lastInspectedAt: daysAgo(20) },
+    { id: "n-valve-3", type: "valve", name: "Valve KLS-03", location: { lat: CENTER.lat - 0.008, lng: CENTER.lng - 0.001 }, condition: "critical", isOpen: false, structureId: "s-vault-2", installedAt: daysAgo(1900), lastInspectedAt: daysAgo(500) },
+    { id: "n-junc-3", type: "junction", name: "Junction J-16", location: { lat: CENTER.lat - 0.006, lng: CENTER.lng - 0.004 }, condition: "fair", isOpen: null, structureId: null, installedAt: daysAgo(1700), lastInspectedAt: daysAgo(70) },
+    { id: "n-hyd-2", type: "hydrant", name: "Hydrant H-08", location: { lat: CENTER.lat - 0.003, lng: CENTER.lng - 0.006 }, condition: "good", isOpen: null, structureId: null, installedAt: daysAgo(1700), lastInspectedAt: daysAgo(10) },
+    { id: "n-valve-4", type: "valve", name: "Valve KLS-04", location: { lat: CENTER.lat, lng: CENTER.lng - 0.006 }, condition: "good", isOpen: true, structureId: null, installedAt: daysAgo(1500), lastInspectedAt: daysAgo(33) },
+    { id: "n-junc-4", type: "junction", name: "Junction J-17", location: { lat: CENTER.lat + 0.003, lng: CENTER.lng - 0.005 }, condition: "good", isOpen: null, structureId: null, installedAt: daysAgo(1500), lastInspectedAt: daysAgo(15) },
+    { id: "n-valve-5", type: "valve", name: "Valve KLS-05 (branch)", location: { lat: CENTER.lat - 0.001, lng: CENTER.lng - 0.001 }, condition: "fair", isOpen: true, structureId: null, installedAt: daysAgo(1200), lastInspectedAt: daysAgo(100) },
+    { id: "n-meter-2", type: "meter", name: "Bulk Meter M-23", location: { lat: CENTER.lat - 0.003, lng: CENTER.lng }, condition: "poor", isOpen: null, structureId: "s-kiosk-1", installedAt: daysAgo(1200), lastInspectedAt: daysAgo(310) },
+    { id: "n-hyd-3", type: "hydrant", name: "Hydrant H-09", location: { lat: CENTER.lat - 0.004, lng: CENTER.lng + 0.001 }, condition: "unknown", isOpen: null, structureId: null, installedAt: daysAgo(900), lastInspectedAt: null },
+    { id: "n-pump-2", type: "pumping_station", name: "Riverside Booster PS", location: { lat: CENTER.lat + 0.002, lng: CENTER.lng + 0.005 }, condition: "fair", isOpen: null, structureId: null, installedAt: daysAgo(2000), lastInspectedAt: daysAgo(50) },
 ];
 
 const pipe = (
@@ -133,6 +136,14 @@ const pipe = (
         lengthM,
     };
 };
+
+export const mockStructures: Structure[] = [
+    { id: "s-vault-1", type: "vault", name: "Vault V-01", location: { lat: CENTER.lat + 0.004, lng: CENTER.lng }, condition: "good", installedAt: daysAgo(2800), lastInspectedAt: daysAgo(60) },
+    { id: "s-chamber-1", type: "chamber", name: "Chamber C-01", location: { lat: CENTER.lat - 0.006, lng: CENTER.lng + 0.001 }, condition: "fair", installedAt: daysAgo(1900), lastInspectedAt: daysAgo(20) },
+    { id: "s-manhole-1", type: "manhole", name: "Manhole MH-04", location: { lat: CENTER.lat - 0.005, lng: CENTER.lng + 0.003 }, condition: "good", installedAt: daysAgo(2400), lastInspectedAt: daysAgo(45) },
+    { id: "s-vault-2", type: "vault", name: "Vault V-02", location: { lat: CENTER.lat - 0.008, lng: CENTER.lng - 0.001 }, condition: "poor", installedAt: daysAgo(1900), lastInspectedAt: daysAgo(500) },
+    { id: "s-kiosk-1", type: "kiosk", name: "Meter Kiosk K-09", location: { lat: CENTER.lat - 0.003, lng: CENTER.lng }, condition: "fair", installedAt: daysAgo(1200), lastInspectedAt: daysAgo(310) },
+];
 
 export const mockPipes: Pipe[] = [
     pipe("p-1", "n-res-1", "n-pump-1", "ductile_iron", 400, "good"),
@@ -190,20 +201,16 @@ export function getNode(id: string) {
  * shared-types package yet — kept local until the backend model exists).
  * `ring` is a closed polygon: first point must equal the last.
  */
-export type Zone = {
-    id: string;
-    name: string;
-    color: string;
-    ring: { lat: number; lng: number }[];
-};
+export const DMA_COLORS = ["#3B82F6", "#A855F7", "#F59E0B", "#EC4899", "#10B981", "#64748B"];
 
-export const ZONE_COLORS = ["#3B82F6", "#A855F7", "#F59E0B", "#EC4899", "#10B981", "#64748B"];
-
-export const mockZones: Zone[] = [
+export const mockDmas: Dma[] = [
     {
-        id: "zone-1",
+        id: "dma-1",
         name: "Zone 1",
-        color: ZONE_COLORS[0],
+        color: DMA_COLORS[0],
+        tierId: "tier-dma",
+        inletMeterId: "n-meter-2",
+        boundaryValveIds: ["n-valve-1", "n-valve-2"],
         ring: [
             { lat: -1.2800, lng: 36.7750 },
             { lat: -1.2800, lng: 36.7895 },
@@ -213,9 +220,12 @@ export const mockZones: Zone[] = [
         ],
     },
     {
-        id: "zone-2",
+        id: "dma-2",
         name: "Zone 2",
-        color: ZONE_COLORS[1],
+        color: DMA_COLORS[1],
+        tierId: "tier-dma",
+        inletMeterId: "n-meter-1",
+        boundaryValveIds: ["n-valve-3"],
         ring: [
             { lat: -1.2965, lng: 36.7740 },
             { lat: -1.2965, lng: 36.7830 },
@@ -225,3 +235,17 @@ export const mockZones: Zone[] = [
         ],
     },
 ];
+
+export const mockTiers: Tier[] = [
+    { id: "tier-transmission", name: "Transmission", order: 1 },
+    { id: "tier-distribution", name: "Distribution", order: 2 },
+    { id: "tier-dma", name: "DMA", order: 3 },
+];
+
+export const mockSubnetworks: Subnetwork[] = [
+    { id: "sn-1", name: "Kileleshwa Transmission Main", tierId: "tier-transmission", controllerNodeId: "n-res-1", lastValidatedAt: daysAgo(1) },
+    { id: "sn-2", name: "Kileleshwa Distribution Zone", tierId: "tier-distribution", controllerNodeId: "n-pump-1", lastValidatedAt: daysAgo(2) },
+    { id: "sn-3", name: "Riverside Distribution Zone", tierId: "tier-distribution", controllerNodeId: "n-pump-2", lastValidatedAt: daysAgo(3) },
+    { id: "sn-4", name: "DMA – KLS Branch", tierId: "tier-dma", controllerNodeId: "n-valve-5", lastValidatedAt: daysAgo(1) },
+];
+

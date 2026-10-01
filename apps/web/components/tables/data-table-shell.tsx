@@ -1,24 +1,18 @@
 "use client";
 
-import type {ReactTable, RowData} from "@tanstack/react-table";
+import type {RowData} from "@tanstack/react-table";
 import {Table, TableHeader, TableBody, TableRow, TableHead, TableCell} from "@/components/ui/table";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import type {AppTableFeatures} from "@/lib/table/features";
+import type {useAppTable} from "@/lib/table/use-app-table";
 
 interface DataTableShellProps<TData extends RowData> {
-    table: ReactTable<AppTableFeatures, TData>;
+    table: ReturnType<typeof useAppTable<TData>>;
     onRowClick?: (row: TData) => void;
     filterPlaceholder?: string;
     emptyMessage?: string;
 }
 
-/**
- * Presentational chrome shared by every sortable/filterable/paginated
- * table — filter input, sortable header row, body, pagination controls.
- * Each page builds its own `table` via useAppTable() and hands it here to
- * render, since columns/data are tied together under the new API.
- */
 export function DataTableShell<TData extends RowData>(
     {
         table,
@@ -33,7 +27,7 @@ export function DataTableShell<TData extends RowData>(
         <div className="flex flex-col gap-3">
             <Input
                 placeholder={filterPlaceholder}
-                value={(table.getState().globalFilter as string) ?? ""}
+                value={(table.state.globalFilter as string) ?? ""}
                 onChange={(e) => table.setGlobalFilter(e.target.value)}
                 className="max-w-sm"
             />
@@ -83,7 +77,7 @@ export function DataTableShell<TData extends RowData>(
                         Previous
                     </Button>
                     <span className="text-xs text-muted-foreground">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+            Page {table.state.pagination.pageIndex + 1} of {table.getPageCount() || 1}
           </span>
                     <Button variant="outline" size="sm" onClick={() => table.nextPage()}
                             disabled={!table.getCanNextPage()}>

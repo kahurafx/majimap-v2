@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "native",
-    "slug": "native",
+    "name": "Majimap",
+    "slug": "majimap",
     "version": "1.0.0",
-    "scheme": "com.turbo.example",
+    "scheme": "majimap",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,27 +15,22 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.turbo.example"
+      "bundleIdentifier": "com.majimap.native"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.turbo.example"
+      "package": "com.majimap.native"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-router",
-      "@maplibre/maplibre-react-native"
-    ]
+    "plugins": ["expo-router", "@maplibre/maplibre-react-native"]
   }
 }

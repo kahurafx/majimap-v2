@@ -1,5 +1,11 @@
-import type { NetworkNode } from "@majimap/shared-types";
-
+import type {
+    NetworkNode,
+    Pipe,
+    User,
+    ValveStateLog,
+    ConditionLog,
+    Structure,
+} from "@majimap/shared-types";
 export const CENTER = { lat: -1.2921, lng: 36.7819 };
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 

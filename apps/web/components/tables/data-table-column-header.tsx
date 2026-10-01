@@ -1,15 +1,18 @@
+'use client'
+
 import type {Column, RowData} from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AppTableFeatures } from "@/lib/table/features";
+import React from "react";
 
-interface DataTableColumnHeaderProps<TData extends RowData> extends React.HTMLAttributes<HTMLDivElement> {
-    column: Column<AppTableFeatures, TData>;
+interface DataTableColumnHeaderProps<TData extends RowData, TValue = unknown> extends React.HTMLAttributes<HTMLDivElement> {
+    column: Column<AppTableFeatures, TData, TValue>;
     title: string;
 }
 
-export function DataTableColumnHeader<TData extends RowData>({ column, title, className }: DataTableColumnHeaderProps<TData>) {
+export function DataTableColumnHeader<TData extends RowData, TValue = unknown>({ column, title, className }: DataTableColumnHeaderProps<TData, TValue>) {
     if (!column.getCanSort()) {
         return <div className={cn("text-xs font-medium text-muted-foreground", className)}>{title}</div>;
     }
