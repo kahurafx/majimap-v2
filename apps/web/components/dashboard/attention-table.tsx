@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {Card, CardContent, CardHeader, CardTitle, CardDescription} from "@/components/ui/card";
+import {Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter} from "@/components/ui/card";
 import {DataTableShell} from "@/components/tables/data-table-shell";
 import {DataTableColumnHeader} from "@/components/tables/data-table-column-header";
 import {ConditionBadge} from "@/components/condition-badge";
@@ -73,6 +73,11 @@ export function AttentionTable() {
             <CardContent>
                 <DataTableShell table={table} filterPlaceholder="Search assets..."/>
             </CardContent>
+            <CardFooter>
+                <Link href="/alerts" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                    View all alerts (also covers DMA boundary issues this table doesn't) →
+                </Link>
+            </CardFooter>
         </Card>
     );
 }
