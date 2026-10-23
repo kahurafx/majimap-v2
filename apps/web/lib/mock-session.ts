@@ -11,7 +11,7 @@ import type { Organization } from "@majimap/shared-types";
 export const currentUser = mockUsers.find((u) => u.id === "u-admin-1")!;
 
 export const mockOrganizations: Organization[] = [
-    { id: "org-1", name: "Nairobi Water & Sewerage Co.", slug: "nairobi-water" },
+    { id: "org-1", name: "Bibirioni Water Co.", slug: "bibirioni-water" },
     { id: "org-2", name: "Kisumu Water Company", slug: "kisumu-water" },
 ];
 

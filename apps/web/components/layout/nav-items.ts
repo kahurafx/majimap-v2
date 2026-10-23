@@ -20,7 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/map", label: "Network map", icon: Map },
     { href: "/tiers", label: "Tiers", icon: Network, roles: ["admin", "gis_engineer"] },
-    { href: "/dmas", label: "DMAs", icon: MapPinned },
+    { href: "/dmas", label: "Zones", icon: MapPinned },
     { href: "/assets", label: "Assets", icon: Boxes },
     { href: "/reports", label: "Reports", icon: FileBarChart },
     {

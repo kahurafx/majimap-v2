@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "prebuild": "node ./scripts/copy-maplibre-worker.mjs",
-    "predev": "node ./scripts/copy-maplibre-worker.mjs"
+    "predev": "node ./scripts/copy-maplibre-worker.mjs",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@majimap/shared-types": "workspace:*",
     "@base-ui/react": "^1.8.0",
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-table": "^9.2.4",

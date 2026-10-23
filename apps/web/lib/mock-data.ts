@@ -21,7 +21,7 @@ export const mockUsers: User[] = [
     {
         id: "u-admin-1",
         name: "Wanjiru Kamau",
-        email: "wanjiru.kamau@nairobiwater.example",
+        email: "wanjiru.kamau@bibirioniwater.example",
         username: null,
         role: "admin",
         isActive: true,
@@ -31,7 +31,7 @@ export const mockUsers: User[] = [
     {
         id: "u-eng-1",
         name: "Otieno Ochieng",
-        email: "otieno.ochieng@nairobiwater.example",
+        email: "otieno.ochieng@bibirioniwater.example",
         username: null,
         role: "gis_engineer",
         isActive: true,
