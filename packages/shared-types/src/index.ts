@@ -63,10 +63,9 @@ export const NodeSchema = z.object({
     name: z.string(),
     location: PointSchema,
     condition: ConditionSchema,
-    // Only meaningful for valves; other node types leave this null.
     isOpen: z.boolean().nullable(),
-    installedAt: z.string().datetime().nullable(),
-    lastInspectedAt: z.string().datetime().nullable(),
+    installedAt: z.iso.datetime({ offset: true }).nullable(),
+    lastInspectedAt: z.iso.datetime({ offset: true }).nullable(),
     structureId: z.string().nullable(),
 });
 export type NetworkNode = z.infer<typeof NodeSchema>;
@@ -87,9 +86,9 @@ export const ValveStateLogSchema = z.object({
     id: z.string(),
     nodeId: z.string(),
     isOpen: z.boolean(),
-    changedAt: z.string().datetime(),
+    changedAt: z.iso.datetime({ offset: true }),
     changedByUserId: z.string(),
-    syncedAt: z.string().datetime().nullable(),
+    syncedAt: z.iso.datetime({ offset: true }).nullable(),
 });
 export type ValveStateLog = z.infer<typeof ValveStateLogSchema>;
 
@@ -99,9 +98,9 @@ export const ConditionLogSchema = z.object({
     pipeId: z.string().nullable(),
     condition: ConditionSchema,
     note: z.string().nullable(),
-    recordedAt: z.string().datetime(),
+    recordedAt: z.iso.datetime({ offset: true }),
     recordedByUserId: z.string(),
-    syncedAt: z.string().datetime().nullable(),
+    syncedAt: z.iso.datetime({ offset: true }).nullable(),
 }).refine((v) => (v.nodeId === null) !== (v.pipeId === null), {
     message: "Exactly one of nodeId/pipeId must be set",
 });
@@ -110,12 +109,12 @@ export type ConditionLog = z.infer<typeof ConditionLogSchema>;
 export const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
-    email: z.string().email().nullable(),
+    email: z.email().nullable(),
     username: z.string().nullable(),
     role: RoleSchema,
     isActive: z.boolean(),
-    lastSyncedAt: z.string().datetime().nullable(),
-    createdAt: z.string().datetime(),
+    lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
+    createdAt: z.iso.datetime({ offset: true }),
 });
 export type User = z.infer<typeof UserSchema>;
 
@@ -124,7 +123,7 @@ export const AssetPhotoSchema = z.object({
     nodeId: z.string().nullable(),
     pipeId: z.string().nullable(),
     storagePath: z.string(),
-    takenAt: z.string().datetime(),
+    takenAt: z.iso.datetime({ offset: true }),
     uploadedByUserId: z.string(),
 });
 export type AssetPhoto = z.infer<typeof AssetPhotoSchema>;
@@ -144,8 +143,8 @@ export const StructureSchema = z.object({
     name: z.string(),
     location: PointSchema,
     condition: ConditionSchema,
-    installedAt: z.string().datetime().nullable(),
-    lastInspectedAt: z.string().datetime().nullable(),
+    installedAt: z.iso.datetime({ offset: true }).nullable(),
+    lastInspectedAt: z.iso.datetime({ offset: true }).nullable(),
 });
 export type Structure = z.infer<typeof StructureSchema>;
 
@@ -176,7 +175,7 @@ export const SubnetworkSchema = z.object({
     name: z.string(),
     tierId: z.string(),
     controllerNodeId: z.string(),
-    lastValidatedAt: z.string().datetime().nullable(),
+    lastValidatedAt: z.iso.datetime({ offset: true }).nullable(),
 });
 export type Subnetwork = z.infer<typeof SubnetworkSchema>;
 
