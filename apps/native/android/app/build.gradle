@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.turbo.example'
+    namespace 'com.majimap.app'
     defaultConfig {
-        applicationId 'com.turbo.example'
+        applicationId 'com.majimap.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

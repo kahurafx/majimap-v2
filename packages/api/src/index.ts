@@ -1,3 +1,4 @@
-// Stub — not implemented in this pass. We're building apps/web against
-// packages/shared-types + local mock data first, then wiring this up.
-export {};
+export { appRouter, createCaller, type AppRouter } from "./router";
+export { createContext, type Context, type Session } from "./context";
+export { handleTrpcRequest, type SessionResolver } from "./server";
+export type { NodeDto } from "./gis/nodes";

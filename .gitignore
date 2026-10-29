@@ -10,12 +10,15 @@ coverage
 
 # next.js
 .next/
+.idea
 .swc/
 out/
 build
 
 # expo
 .expo
+/android
+/ios
 
 # misc
 .DS_Store

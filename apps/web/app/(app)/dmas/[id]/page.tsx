@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConditionBadge } from "@/components/condition-badge";
 import { BasicTable, type BasicTableColumn } from "@/components/tables/basic-table";
 import { mockDmas, mockNodes, mockPipes, mockTiers } from "@/lib/mock-data";
-import { traceSubnetworkMembership } from "@/lib/network-graph";
+import { traceSubnetworkMembership } from "@majimap/network";
 import type { NetworkNode } from "@majimap/shared-types";
 
 const memberColumns: BasicTableColumn<NetworkNode>[] = [

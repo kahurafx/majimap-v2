@@ -12,6 +12,7 @@
       "persistent": true
     },
     "lint": {},
+    "check-types": { "dependsOn": ["^check-types"] },
     "clean": {
       "cache": false
     }

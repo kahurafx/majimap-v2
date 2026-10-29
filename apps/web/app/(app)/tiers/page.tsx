@@ -22,7 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { BasicTable, type BasicTableColumn } from "@/components/tables/basic-table";
 import { ConditionBadge } from "@/components/condition-badge";
 import { mockTiers, mockSubnetworks, mockNodes, mockPipes } from "@/lib/mock-data";
-import { traceSubnetworkMembership } from "@/lib/network-graph";
+import { traceSubnetworkMembership } from "@majimap/network";
 import { formatDateTime } from "@/lib/utils";
 import type { Subnetwork, NetworkNode } from "@majimap/shared-types";
 

@@ -1,0 +1,57 @@
+# 1. Type-check everything (this part I did run, against my rebuilt copy)
+pnpm typecheck
+
+# 2. Pure tests, no database
+pnpm --filter @majimap/api exec tsx --test src/gis/test/geo.test.ts
+
+# 3. Everything, against a migrated throwaway database
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/majimap_test pnpm --filter @majimap/api test
+
+# 4. Just the new suites
+TEST_DATABASE_URL=... pnpm --filter @majimap/api exec tsx --test src/gis/test/structures.test.ts
+TEST_DATABASE_URL=... pnpm --filter @majimap/api exec tsx --test src/gis/test/pipes.test.ts
+
+pnpm typecheck
+
+# 1. Regression first: the existing node reconcile suites against the refactored engine
+pnpm --filter @majimap/api exec tsx --test src/gis/test/reconcile-core.test.ts
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/majimap_test \
+  pnpm --filter @majimap/api exec tsx --test src/gis/test/reconcile.test.ts
+
+# 2. The new behaviour (15 tests)
+TEST_DATABASE_URL=... pnpm --filter @majimap/api exec tsx --test src/gis/test/reconcile-entities.test.ts
+
+# 3. Everything
+TEST_DATABASE_URL=... pnpm --filter @majimap/api test
+
+pnpm typecheck
+
+# 1. Regression first: everything that already existed, against the refactored engine
+pnpm --filter @majimap/api exec tsx --test src/gis/test/reconcile-core.test.ts src/gis/test/geo.test.ts
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/majimap_test \
+  pnpm --filter @majimap/api exec tsx --test src/gis/test/nodes.test.ts src/gis/test/reconcile.test.ts src/gis/test/reconcile-entities.test.ts src/gis/test/structures.test.ts src/gis/test/pipes.test.ts
+
+# 2. The new pure tests
+pnpm --filter @majimap/api exec tsx --test src/gis/test/reconcile-core.sets.test.ts src/gis/test/geo-ring.test.ts
+
+# 3. The new database suites
+TEST_DATABASE_URL=... pnpm --filter @majimap/api exec tsx --test src/gis/test/dmas.test.ts src/gis/test/reconcile-dmas.test.ts
+
+
+pnpm install          # picks up the new @majimap/network dependency on api
+pnpm typecheck
+
+# 1. Regression first: everything that existed, against the changed nodes.delete, rethrowDbError and reconcile
+pnpm --filter @majimap/api exec tsx --test src/gis/tests/reconcile-core.test.ts src/gis/tests/reconcile-core.sets.test.ts src/gis/tests/geo.test.ts src/gis/tests/geo-ring.test.ts
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/majimap_test \
+  pnpm --filter @majimap/api exec tsx --test \
+    src/gis/tests/nodes.test.ts src/gis/tests/structures.test.ts src/gis/tests/pipes.test.ts src/gis/tests/dmas.test.ts \
+    src/gis/tests/reconcile.test.ts src/gis/tests/reconcile-entities.test.ts src/gis/tests/reconcile-dmas.test.ts
+
+# 2. New pure tests
+pnpm --filter @majimap/api exec tsx --test src/gis/tests/geo-point.test.ts
+
+# 3. New database suites
+TEST_DATABASE_URL=... pnpm --filter @majimap/api exec tsx --test \
+  src/gis/tests/tiers.test.ts src/gis/tests/subnetworks.test.ts src/gis/tests/trace.test.ts src/gis/tests/dmas-analysis.test.ts
+

@@ -29,7 +29,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="com.turbo.example"/>
+        <data android:scheme="majimap"/>
+        <data android:scheme="exp+majimap"/>
       </intent-filter>
     </activity>
   </application>

@@ -18,14 +18,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.majimap.native"
+      "bundleIdentifier": "com.majimap.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.majimap.native"
+      "package": "com.majimap.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

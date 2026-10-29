@@ -8,7 +8,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "typescript": "^7.0.2",
-    "zod": "^4.6.5"
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@majimap/typescript-config": "workspace:*"
   }
 }

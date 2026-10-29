@@ -15,42 +15,28 @@
     fhs = pkgs.buildFHSEnv {
       name = "turbo-rn-workspace";
       targetPkgs = p: with p; [
-        # JS Ecosystem (Latest LTS)
         nodejs_24
         pnpm
         watchman
 
-        # Java Environment (Must be JDK 17 for React Native)
-        jdk17
+        jdk17_headless
 
-        # Native compilation tools for RN C++ modules
         gnumake
         gcc
         pkg-config
 
-        # Standard Linux libraries required by the unpatched Android SDK
         zlib
-        glibc
+        # glibc is removed here
         ncurses
         freetype
-
-        # Font & UI rendering libraries required by Java/Gradle
         fontconfig
-        pango
-        cairo
-        xorg.libX11
-        xorg.libXext
-        xorg.libXrender
-        xorg.libXtst
       ];
 
-      # Bind environment variables strictly inside the shell
       profile = ''
         export ANDROID_HOME="$HOME/Android/Sdk"
         export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
-        export JAVA_HOME="${pkgs.jdk17}/lib/openjdk"
-
-        # Expose adb and gradle to your PATH
+        export JAVA_HOME="${pkgs.jdk17_headless}/lib/openjdk"
+        export _JAVA_OPTIONS="-Djava.awt.headless=true"
         export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
       '';
 

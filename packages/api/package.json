@@ -3,5 +3,25 @@
   "version": "0.0.0",
   "private": true,
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "types": "src/index.ts",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@majimap/db": "workspace:*",
+    "@majimap/shared-types": "workspace:*",
+    "@majimap/network": "workspace:*",
+    "@paralleldrive/cuid2": "^3.3.0",
+    "@trpc/server": "^11.19.0",
+    "drizzle-orm": "^0.45.3",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@majimap/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
 }

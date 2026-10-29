@@ -3,5 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "types": "src/index.ts",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@majimap/typescript-config": "workspace:*",
+    "@types/node": "^26.6.5",
+    "typescript": "catalog:"
+  }
 }

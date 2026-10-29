@@ -1,0 +1,5 @@
+{
+  "extends": "@majimap/typescript-config/base.json",
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

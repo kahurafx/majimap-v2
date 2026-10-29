@@ -11,7 +11,7 @@ import { GeoJSON } from "geojson";
 import { toast } from "sonner";
 
 import { mockNodes, mockPipes, mockDmas, mockTiers, mockSubnetworks, CENTER, DMA_COLORS} from "@/lib/mock-data";
-import { traceSubnetworkMembership, traceDirectional, traceIsolation, type IsolationTraceResult } from "@/lib/network-graph";
+import { traceSubnetworkMembership, traceDirectional, traceIsolation, type IsolationTraceResult } from "@majimap/network";
 import { CONDITION_HEX } from "@/components/condition-badge";
 import type {NodeType, NetworkNode, Dma} from "@majimap/shared-types";
 
@@ -281,8 +281,12 @@ export function NetworkMap() {
 
     const runIsolationTrace = useCallback((failedPipeId: string, skipValveIds: string[]) => {
         setTraceFailedPipeId(failedPipeId);
-        const result: IsolationTraceResult = traceIsolation(failedPipeId, nodesRef.current, mockPipes, skipValveIds);
-        setTraceResult({ affected: result.affectedNodes, valvesToClose: result.valvesToClose, deadEnds: result.deadEnds });
+        const result = traceIsolation(failedPipeId, nodesRef.current, mockPipes, skipValveIds);
+        setTraceResult({
+            affected: result.affectedNodes,
+            valvesToClose: result.valvesToClose,
+            deadEnds: result.unisolatedSources.length,
+        });
     }, []);
 
     const openNodePopup = useCallback((e: maplibregl.MapLayerMouseEvent) => {
@@ -791,8 +795,9 @@ export function NetworkMap() {
 
                             {!!traceResult.deadEnds && (
                                 <p className="flex items-center gap-1 text-[11px] text-destructive">
-                                    <AlertTriangle className="h-3 w-3" /> {traceResult.deadEnds} branch{traceResult.deadEnds === 1 ? "" : "es"} can&#39;t
-                                    be isolated
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {traceResult.deadEnds === 1 ? "A supply source is" : `${traceResult.deadEnds} supply sources are`} connected
+                                    to the break with no valve in between
                                 </p>
                             )}
 
@@ -819,7 +824,7 @@ export function NetworkMap() {
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>New DMA</DialogTitle>
+                        <DialogTitle>New Zone</DialogTitle>
                         <DialogDescription>
                             The inlet meter becomes the trace controller — membership is computed from it, not from this
                             boundary alone.

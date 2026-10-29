@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import { Map, List, Cloud, User, Plus } from "lucide-react-native";
 import AddAssetSheet from "../../components/add-asset-sheet";
-import {BottomTabBarProps} from "expo-router/js-tabs";
-// import {BottomTabBarProps} from "@react-navigation/bottom-tabs";
+// import {BottomTabBarProps} from "expo-router/js-tabs";
+import {BottomTabBarProps} from "@react-navigation/bottom-tabs";
 
 const ICONS: Record<string, any> = { map: Map, assets: List, sync: Cloud, profile: User };
 const LABELS: Record<string, string> = { map: "Map", assets: "Assets", sync: "Sync", profile: "Profile" };
@@ -13,8 +13,11 @@ const LABELS: Record<string, string> = { map: "Map", assets: "Assets", sync: "Sy
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
     const [addOpen, setAddOpen] = useState(false);
-    const left = state.routes.slice(0, 2);
-    const right = state.routes.slice(2);
+
+    const visible = state.routes.filter((r) => r.name in ICONS);
+    const left = visible.slice(0, 2);
+    const right = visible.slice(2);
+
 
     const renderTab = (route: (typeof state.routes)[number]) => {
         const routeIndex = state.routes.findIndex((r) => r.key === route.key);
@@ -27,6 +30,8 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             </TouchableOpacity>
         );
     };
+
+    console.log(state.routes.map((r) => r.name));
 
     return (
         <View style={{ paddingBottom: insets.bottom || 10 }} className="bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 pt-2">
@@ -54,6 +59,7 @@ export default function AppLayout() {
             <Tabs.Screen name="assets" options={{ title: "Assets" }} />
             <Tabs.Screen name="sync" options={{ title: "Sync" }} />
             <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+            <Tabs.Screen name="index" options={{ href: null, title: "Home" }} />
         </Tabs>
     );
 }

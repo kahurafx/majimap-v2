@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BasicTable, type BasicTableColumn } from "@/components/tables/basic-table";
 import { mockDmas, mockNodes, mockTiers } from "@/lib/mock-data";
-import { traceSubnetworkMembership } from "@/lib/network-graph";
+import { traceSubnetworkMembership } from "@majimap/network";
 import type { Dma } from "@majimap/shared-types";
 
 function tierName(tierId: string) {
