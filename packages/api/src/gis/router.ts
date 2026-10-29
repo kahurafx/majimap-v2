@@ -1,5 +1,6 @@
 import { router } from "../trpc";
 import { dmasRouter } from "./dmas";
+import { logsRouter } from "./logs";
 import { nodesRouter } from "./nodes";
 import { pipesRouter } from "./pipes";
 import { reconcileRouter } from "./reconcile";
@@ -16,5 +17,6 @@ export const gisRouter = router({
     tiers: tiersRouter,
     subnetworks: subnetworksRouter,
     trace: traceRouter,
+    logs: logsRouter,
     reconcile: reconcileRouter,
 });

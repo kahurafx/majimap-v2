@@ -14,3 +14,4 @@ export * from "./gis/structures";
 export * from "./gis/tiers";
 export * from "./gis/dmas";
 export * from "./gis/roles";
+export * from "./gis/logs";

@@ -1,6 +1,5 @@
 import type { Database } from "./client";
-import { MODULE_KEYS, organizationModules, type ModuleKey } from "./schema/core/modules";
-import { gisUserRoles } from "./schema/gis/roles";
+import { MODULE_KEYS, organizationModules, type ModuleKey, gisUserRoles } from "./schema";
 
 /**
  * Give a new organization its module registry and make its creator a GIS

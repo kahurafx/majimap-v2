@@ -1,3 +1,6 @@
-// Stub — not implemented in this pass. We're building apps/web against
-// packages/shared-types + local mock data first, then wiring this up.
-export {};
+// Server-only entry. Browser code imports "@majimap/auth/client", native "@majimap/auth/expo".
+export { createAuth, getAuth, APP_SCHEME } from "./auth";
+export type { Auth } from "./auth";
+export { getApiSession } from "./session";
+export type { ApiSession } from "./session";
+export { createFieldUser, namespacedUsername } from "./provision-user";

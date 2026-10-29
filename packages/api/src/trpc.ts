@@ -61,7 +61,7 @@ export function moduleProcedure(moduleKey: ModuleKey) {
  * GIS module access plus the caller's GIS role. Not Better Auth's
  * org-membership role — that decides who can invite people and manage
  * billing; this decides what someone can do to the network.
- */3
+ */
 export const gisProcedure = moduleProcedure("gis").use(async ({ ctx, next }) => {
     const [row] = await ctx.db
         .select({ role: gisUserRoles.role })

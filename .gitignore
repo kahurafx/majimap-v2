@@ -36,5 +36,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# NIXOS
+flake.nix
+flake.lock
+
 # turbo
 .turbo

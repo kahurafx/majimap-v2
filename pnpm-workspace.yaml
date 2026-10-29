@@ -5,4 +5,5 @@ catalog:
   typescript: ^7.0.2
   zod: "^4.6.5"
   tsx: "^4.23.15"
+  better-auth: "^1.7.14"
   '@types/node': "^26.6.5"

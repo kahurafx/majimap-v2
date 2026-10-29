@@ -2,14 +2,38 @@
   "name": "@majimap/auth",
   "version": "0.0.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./expo": "./src/expo-client.ts"
+  },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "auth:generate": "pnpm dlx @better-auth/cli generate --config src/cli.config.ts --output ./generated-schema.ts"
+  },
+  "dependencies": {
+    "@better-auth/expo": "^1.7.14",
+    "@majimap/db": "workspace:*",
+    "better-auth": "^1.7.14",
+    "drizzle-orm": "^0.45.3"
+  },
+  "peerDependencies": {
+    "expo-secure-store": "*",
+    "react": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo-secure-store": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@majimap/shared-types": "workspace:*",
     "@majimap/typescript-config": "workspace:*",
-    "@types/node": "^26.6.5",
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }
