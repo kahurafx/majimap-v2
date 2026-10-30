@@ -31,6 +31,15 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": ["expo-router", "@maplibre/maplibre-react-native"]
+    "plugins": [
+      "expo-router",
+      "@maplibre/maplibre-react-native",
+      ["expo-location", { "locationWhenInUsePermission": "Majimap uses your location to show nearby assets and to record where new assets are." }],
+      ["expo-image-picker", {
+        "photosPermission": "Majimap attaches photos of assets you choose.",
+        "cameraPermission": "Majimap takes photos of assets in the field.",
+        "microphonePermission": false
+      }]
+    ]
   }
 }

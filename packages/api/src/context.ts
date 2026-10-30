@@ -1,4 +1,5 @@
 import type { Database } from "@majimap/db";
+import type { Storage } from "./storage";
 
 /**
  * What the API needs to know about the caller. Deliberately NOT Better
@@ -15,6 +16,7 @@ export type Session = {
 export type Context = {
     db: Database;
     session: Session | null;
+    storage: Storage;
 };
 
 export function createContext(input: Context): Context {

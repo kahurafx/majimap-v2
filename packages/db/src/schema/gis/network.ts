@@ -1,9 +1,9 @@
-import { boolean, index, real, timestamp, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, real, timestamp, text, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { organizationScopedColumns, versionedColumns } from "../core/columns";
 import { pointColumn, lineStringColumn } from "../core/geometry";
 import { assets } from "../core/assets";
-import { gisSchema, nodeTypeEnum, conditionEnum, pipeMaterialEnum } from "./shared";
+import { gisSchema, nodeTypeEnum, conditionEnum, junctionTypeEnum, pipeMaterialEnum } from "./shared";
 
 export const nodes = gisSchema.table(
     "nodes",
@@ -21,11 +21,25 @@ export const nodes = gisSchema.table(
         structureId: text("structure_id").references(() => assets.id),
         installedAt: timestamp("installed_at", { withTimezone: true }),
         lastInspectedAt: timestamp("last_inspected_at", { withTimezone: true }),
+
+        // Junction details. All three are NULL for anything that isn't a junction, and for a junction
+        // nobody has recorded yet. Type and main size always come together.
+        junctionType: junctionTypeEnum("junction_type"),
+        mainSizeMm: integer("main_size_mm"),
+        branchSizeMm: integer("branch_size_mm"),
     },
     (table) => [
         uniqueIndex("nodes_head_unique").on(table.id, table.branch).where(sql`${table.isHead} = true`),
         index("nodes_org_idx").on(table.organizationId),
         index("nodes_structure_idx").on(table.structureId),
+        check(
+            "nodes_junction_fields",
+            sql`(${table.type} = 'junction' or (${table.junctionType} is null and ${table.mainSizeMm} is null and ${table.branchSizeMm} is null))
+                and ((${table.junctionType} is null) = (${table.mainSizeMm} is null))
+                and (${table.mainSizeMm} is null or ${table.mainSizeMm} > 0)
+                and (${table.branchSizeMm} is null or (${table.mainSizeMm} is not null and ${table.branchSizeMm} < ${table.mainSizeMm}))
+                and (${table.junctionType} is distinct from 'reducer' or ${table.branchSizeMm} is not null)`,
+        ),
     ],
 );
 

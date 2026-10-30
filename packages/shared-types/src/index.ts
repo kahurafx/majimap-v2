@@ -51,6 +51,27 @@ export const CONDITION_HEX: Record<Condition, string> = {
     unknown: "#8b93a1",
 };
 
+
+// JUNCTIONS
+export const JunctionTypeSchema = z.enum(["tee", "cross", "elbow", "wye", "reducer"]);
+export type JunctionType = z.infer<typeof JunctionTypeSchema>;
+
+const SizeMm = z.number().int().positive().max(5000);
+
+/** `branchSizeMm: null` means equal: the same size all the way through. */
+export const JunctionSchema = z
+    .object({ type: JunctionTypeSchema, mainSizeMm: SizeMm, branchSizeMm: SizeMm.nullable() })
+    .refine((j) => j.branchSizeMm === null || j.branchSizeMm < j.mainSizeMm, {
+        message: "The smaller size must be less than the main size",
+        path: ["branchSizeMm"],
+    })
+    .refine((j) => j.type !== "reducer" || j.branchSizeMm !== null, {
+        message: "A reducer must step down to a smaller size",
+        path: ["branchSizeMm"],
+    });
+export type JunctionSpec = z.infer<typeof JunctionSchema>;
+
+
 export const PointSchema = z.object({
     lat: z.number(),
     lng: z.number(),
@@ -67,6 +88,7 @@ export const NodeSchema = z.object({
     installedAt: z.iso.datetime({ offset: true }).nullable(),
     lastInspectedAt: z.iso.datetime({ offset: true }).nullable(),
     structureId: z.string().nullable(),
+    junction: JunctionSchema.nullable().optional(),
 });
 export type NetworkNode = z.infer<typeof NodeSchema>;
 
@@ -191,3 +213,87 @@ export const DmaSchema = z.object({
     ring: z.array(PointSchema),
 });
 export type Dma = z.infer<typeof DmaSchema>;
+
+// PHOTOS AND ATTACHMENTS
+export type PhotoRule = "required" | "optional";
+
+/** Required where the asset is above ground and worth proving. The server enforces it when a branch is posted. */
+export const NODE_PHOTO_RULE: Record<NodeType, PhotoRule> = {
+    reservoir: "required",
+    pumping_station: "required",
+    meter: "required",
+    valve: "optional",
+    hydrant: "optional",
+    junction: "optional",
+};
+export const STRUCTURE_PHOTO_RULE: PhotoRule = "optional";
+
+export const ATTACHMENT_SUBJECTS = ["node", "pipe", "structure", "work_order"] as const;
+export const AttachmentSubjectSchema = z.enum(ATTACHMENT_SUBJECTS);
+export type AttachmentSubject = z.infer<typeof AttachmentSubjectSchema>;
+
+export const ATTACHMENT_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf", "text/plain", "text/csv"] as const;
+export const ATTACHMENT_LIMITS = { photos: 5, files: 3, maxBytes: 10 * 1024 * 1024 } as const;
+
+export const AttachmentSchema = z.object({
+    id: z.string(),
+    subjectType: AttachmentSubjectSchema,
+    subjectId: z.string(),
+    fileName: z.string(),
+    mimeType: z.string(),
+    sizeBytes: z.number().int(),
+    kind: z.enum(["photo", "document"]),
+    status: z.enum(["pending", "uploaded"]),
+    uploadedByUserId: z.string(),
+    uploadedAt: z.iso.datetime({ offset: true }),
+});
+export type AttachmentDto = z.infer<typeof AttachmentSchema>;
+
+// WORK ORDERS
+export const WorkOrderKindSchema = z.enum(["leak", "inspection", "valve_replacement", "flushing"]);
+export type WorkOrderKind = z.infer<typeof WorkOrderKindSchema>;
+
+export const WorkOrderPrioritySchema = z.enum(["urgent", "high", "normal"]);
+export type WorkOrderPriority = z.infer<typeof WorkOrderPrioritySchema>;
+
+export const WorkOrderStatusSchema = z.enum(["pending", "in_progress", "blocked", "completed", "cancelled"]);
+export type WorkOrderStatus = z.infer<typeof WorkOrderStatusSchema>;
+
+export const WorkOrderOutcomeSchema = z.enum(["done", "partial", "no_fault"]);
+export type WorkOrderOutcome = z.infer<typeof WorkOrderOutcomeSchema>;
+
+/** A step with an action is done by recording an inspection or a valve operation against the job's asset. */
+export const StepActionSchema = z.enum(["inspect", "valve"]);
+export type StepAction = z.infer<typeof StepActionSchema>;
+
+export const ChecklistStepSchema = z.object({
+    id: z.string(),
+    label: z.string(),
+    done: z.boolean(),
+    action: StepActionSchema.optional(),
+});
+export type ChecklistStep = z.infer<typeof ChecklistStepSchema>;
+
+export const WorkOrderSchema = z.object({
+    id: z.string(),
+    code: z.string(),
+    title: z.string(),
+    kind: WorkOrderKindSchema,
+    priority: WorkOrderPrioritySchema,
+    status: WorkOrderStatusSchema,
+    description: z.string(),
+    source: z.string(),
+    createdAt: z.iso.datetime({ offset: true }),
+    dueAt: z.iso.datetime({ offset: true }),
+    assetId: z.string().nullable(),
+    /** Null for reports that arrived without a position (a leak called in). */
+    location: PointSchema.nullable(),
+    locationNote: z.string().nullable(),
+    assignedToUserId: z.string().nullable(),
+    checklist: z.array(ChecklistStepSchema),
+    hold: z.object({ reason: z.string(), note: z.string(), at: z.iso.datetime({ offset: true }) }).optional(),
+    completion: z
+        .object({ at: z.iso.datetime({ offset: true }), outcome: WorkOrderOutcomeSchema, note: z.string(), photoCount: z.number().int() })
+        .optional(),
+});
+export type WorkOrder = z.infer<typeof WorkOrderSchema>;

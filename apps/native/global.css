@@ -1,5 +1,20 @@
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "tailwindcss/utilities.css";
+@import "../../node_modules/.pnpm/tailwindcss@4.1.12/node_modules/tailwindcss/theme.css" layer(theme);
+@import "../../node_modules/.pnpm/tailwindcss@4.1.12/node_modules/tailwindcss/preflight.css" layer(base);
+@import "../../node_modules/.pnpm/tailwindcss@4.1.12/node_modules/tailwindcss/utilities.css";
 
-@import "nativewind/theme";
+@import "../../node_modules/.pnpm/nativewind@5.0.0-rc.0_react-native-css@3.1.0-rc.0_@expo+metro-config@57.0.12_expo@57.0._a50b5195a1e25bc53e383d083f4e492c/node_modules/nativewind/theme.css";
+
+/*
+ * Brand accent. One place to change when the web palette is confirmed.
+ * Keep in sync with BRAND in lib/theme.ts (used where a hex is needed, e.g. icons).
+ */
+@layer theme {
+    @theme {
+        --color-brand-50: #eff6ff;
+        --color-brand-100: #dbeafe;
+        --color-brand-400: #60a5fa;
+        --color-brand-500: #3b82f6;
+        --color-brand-600: #2563eb;
+        --color-brand-700: #1d4ed8;
+    }
+}

@@ -12,9 +12,9 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@majimap/network": "workspace:*",
     "@expo/dom-webview": "~57.0.1",
     "@gorhom/bottom-sheet": "^5.2.14",
+    "@majimap/network": "workspace:*",
     "@majimap/shared-types": "workspace:*",
     "@maplibre/maplibre-react-native": "^11.4.0",
     "@react-navigation/bottom-tabs": "^7.19.2",
@@ -22,6 +22,9 @@
     "expo": "^57.0.24",
     "expo-constants": "~57.0.19",
     "expo-dev-client": "^57.0.19",
+    "expo-document-picker": "~57.0.3",
+    "expo-file-system": "~57.0.7",
+    "expo-image-picker": "~57.0.20",
     "expo-linking": "~57.0.10",
     "expo-local-authentication": "~57.0.3",
     "expo-location": "~57.0.20",

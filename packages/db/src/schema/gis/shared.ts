@@ -27,3 +27,7 @@ export const pipeMaterialEnum = gisSchema.enum("pipe_material", [
 export const gisRoleEnum = gisSchema.enum("gis_role", [
     "admin", "gis_engineer", "field_technician", "viewer",
 ]);
+
+export const junctionTypeEnum = gisSchema.enum("junction_type", [
+    "tee", "cross", "elbow", "wye", "reducer"
+]);

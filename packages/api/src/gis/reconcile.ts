@@ -1,16 +1,30 @@
-import { createHash } from "node:crypto";
-import { createId } from "@paralleldrive/cuid2";
-import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, ne, or } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
-import { z } from "zod";
-import { dmaBoundaryValves, dmas, domainEvents, nodes, pipes, structures, subnetworks, type Database, type LatLng } from "@majimap/db";
-import { gisRoleProcedure, router } from "../trpc";
-import { loadBoundaryValves, writeBoundaryValves } from "./dmas";
-import { pathLengthMetres } from "./geo";
-import { planMerge, type Conflict, type MergePlan, type Resolutions } from "./reconcile-core";
-import { syncAssetRegistry, type VersionedRow, type VersionedTable } from "./versioned";
-import { BranchSchema, MAIN_BRANCH, rethrowDbError, toIso } from "./versioning";
+import {createHash} from "node:crypto";
+import {createId} from "@paralleldrive/cuid2";
+import {TRPCError} from "@trpc/server";
+import {and, eq, inArray, ne, or} from "drizzle-orm";
+import {NODE_PHOTO_RULE, type JunctionSpec, type NodeType} from "@majimap/shared-types";
+import {photoCounts} from "../photo-counts";
+import {junctionColumns, junctionFromRow} from "./junction";
+import type {PgTable} from "drizzle-orm/pg-core";
+import {z} from "zod";
+import {
+    dmaBoundaryValves,
+    dmas,
+    domainEvents,
+    nodes,
+    pipes,
+    structures,
+    subnetworks,
+    user,
+    type Database,
+    type LatLng
+} from "@majimap/db";
+import {gisRoleProcedure, router} from "../trpc";
+import {loadBoundaryValves, writeBoundaryValves} from "./dmas";
+import {pathLengthMetres} from "./geo";
+import {planMerge, type Conflict, type MergePlan, type Resolutions} from "./reconcile-core";
+import {syncAssetRegistry, type VersionedRow, type VersionedTable} from "./versioned";
+import {BranchSchema, MAIN_BRANCH, rethrowDbError, toIso} from "./versioning";
 
 type EntityType = "node" | "structure" | "pipe" | "dma";
 type AnyRow = VersionedRow & Record<string, unknown>;
@@ -50,6 +64,12 @@ type Kind = {
      * opposite directions would leave a length that doesn't match the geometry.
      */
     finalize?: (values: Record<string, unknown>) => Record<string, unknown>;
+    /**
+     * Fields that exist only on the loaded rows (a node's `junction` is three columns
+     * presented as one value). They're merged as a unit, and `finalize` turns them back
+     * into columns. They're never written as keys of their own.
+     */
+    virtualFields?: readonly string[];
 };
 
 /**
@@ -70,9 +90,19 @@ const KINDS: readonly Kind[] = [
     {
         entityType: "node",
         table: nodes,
-        fields: ["name", "location", "condition", "isOpen", "structureId", "installedAt", "lastInspectedAt"],
+        // Junction type and sizes merge as ONE field: sizes are only valid together
+        // (the branch must be smaller than the main), so a half-merge could break the CHECK.
+        fields: ["name", "location", "condition", "isOpen", "structureId", "installedAt", "lastInspectedAt", "junction"],
+        virtualFields: ["junction"],
         displayName: (row) => String(row.name),
         registry: "name-and-location",
+        attachChildren: async (_db, rows) => {
+            for (const row of rows) row.junction = junctionFromRow(row as never);
+        },
+        finalize: (values) => {
+            const {junction, ...rest} = values;
+            return {...rest, ...junctionColumns(junction as JunctionSpec | null | undefined)};
+        },
     },
     {
         entityType: "pipe",
@@ -80,7 +110,7 @@ const KINDS: readonly Kind[] = [
         fields: ["path", "material", "diameterMm", "condition"],
         displayName: (row) => `Pipe ${row.id}`,
         registry: "none",
-        finalize: (values) => ({ ...values, lengthM: pathLengthMetres(values.path as LatLng[]) }),
+        finalize: (values) => ({...values, lengthM: pathLengthMetres(values.path as LatLng[])}),
     },
     {
         entityType: "dma",
@@ -116,7 +146,8 @@ type Violation = {
         | "node-structure-missing"
         | "dma-inlet-missing"
         | "dma-valve-missing"
-        | "subnetwork-controller-missing";
+        | "subnetwork-controller-missing"
+        | "node-photo-missing";
     /** The entity that would be left pointing at something that isn't there. */
     entityId: string;
     /** What it points at. */
@@ -210,7 +241,11 @@ function headsToken(entries: readonly Entry[]): string {
 }
 
 function planFor(entry: Entry, resolutions: Resolutions = {}): MergePlan {
-    return planMerge({ base: entry.base, branch: entry.branchHead, main: entry.mainHead }, entry.kind.fields, resolutions, {
+    return planMerge({
+        base: entry.base,
+        branch: entry.branchHead,
+        main: entry.mainHead
+    }, entry.kind.fields, resolutions, {
         setFields: entry.kind.setFields,
     });
 }
@@ -228,18 +263,32 @@ function entityName(entry: Entry): string {
     return entry.kind.displayName(shown);
 }
 
-function describePlan(plan: MergePlan) {
+/** What changes, field by field: the live value now, and what it becomes. */
+function changesOf(entry: Entry, plan: WritePlan) {
+    if (plan.tombstone) return [];
+    const live = entry.mainHead && !entry.mainHead.isDeleted ? entry.mainHead : null;
+    return plan.changedFields.map((field) => ({ field, from: toWire(live ? live[field] : null), to: toWire(plan.values[field]) }));
+}
+
+function describePlan(entry: Entry, plan: MergePlan) {
     return {
         kind: plan.kind,
         detail: plan.kind === "write" ? plan.mode : plan.kind === "skip" ? plan.reason : "conflict",
         changedFields: plan.kind === "write" ? plan.changedFields : [],
+        changes: plan.kind === "write" ? changesOf(entry, plan) : [],
         conflicts: plan.kind === "conflict" ? plan.conflicts.map(wireConflict) : [],
     };
 }
 
+const needsPhotoEvidence = (entry: Entry, plan: MergePlan) =>
+    entry.kind.entityType === "node" &&
+    plan.kind === "write" &&
+    plan.mode === "create" &&
+    NODE_PHOTO_RULE[entry.branchHead.type as NodeType] === "required";
+
 function assertNotMain(branch: string) {
     if (branch === MAIN_BRANCH) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Main can't be reconciled onto itself" });
+        throw new TRPCError({code: "BAD_REQUEST", message: "Main can't be reconciled onto itself"});
     }
 }
 
@@ -247,22 +296,25 @@ async function retireHead(tx: Database, kind: Kind, versionId: string) {
     const table = kind.table;
     const flipped = await tx
         .update(table)
-        .set({ isHead: false } as never)
+        .set({isHead: false} as never)
         .where(and(eq(table.versionId, versionId), eq(table.isHead, true)))
-        .returning({ versionId: table.versionId });
+        .returning({versionId: table.versionId});
     if (flipped.length === 0) {
-        throw new TRPCError({ code: "CONFLICT", message: "The branch changed while it was being reconciled — review it again" });
+        throw new TRPCError({
+            code: "CONFLICT",
+            message: "The branch changed while it was being reconciled — review it again"
+        });
     }
 }
 
-type Applied = { entityType: EntityType; id: string; tombstone: boolean; next: AnyRow };
+type Applied = { entityType: EntityType; id: string; tombstone: boolean; next: AnyRow; mode: WritePlan["mode"] };
 
 async function applyWrite(
     tx: Database,
     args: { orgId: string; userId: string; branch: string; entry: Entry; plan: WritePlan },
 ): Promise<Applied> {
-    const { orgId, userId, branch, entry, plan } = args;
-    const { kind, mainHead, branchHead } = entry;
+    const {orgId, userId, branch, entry, plan} = args;
+    const {kind, mainHead, branchHead} = entry;
     const table = kind.table;
 
     if (mainHead) {
@@ -270,18 +322,18 @@ async function applyWrite(
         // whole reconcile rolls back rather than overwriting someone's edit.
         const flipped = await tx
             .update(table)
-            .set({ isHead: false } as never)
+            .set({isHead: false} as never)
             .where(and(eq(table.versionId, mainHead.versionId), eq(table.isHead, true)))
-            .returning({ versionId: table.versionId });
+            .returning({versionId: table.versionId});
         if (flipped.length === 0) {
-            throw new TRPCError({ code: "CONFLICT", message: "Main changed while reconciling — review again and retry" });
+            throw new TRPCError({code: "CONFLICT", message: "Main changed while reconciling — review again and retry"});
         }
     }
 
     const source = mainHead ?? branchHead;
-    const { versionId: _versionId, createdAt: _createdAt, ...carried } = source;
+    const {versionId: _versionId, createdAt: _createdAt, ...carried} = source;
     const values = plan.tombstone ? {} : kind.finalize ? kind.finalize(plan.values) : plan.values;
-    const virtual = new Set(kind.setFields ?? []);
+    const virtual = new Set([...(kind.setFields ?? []), ...(kind.virtualFields ?? [])]);
     const columnsOnly = (record: Record<string, unknown>) =>
         Object.fromEntries(Object.entries(record).filter(([key]) => !virtual.has(key)));
 
@@ -307,8 +359,8 @@ async function applyWrite(
             tx,
             next.id,
             kind.registry === "name"
-                ? { label: String(next.name) }
-                : { label: String(next.name), location: next.location as LatLng },
+                ? {label: String(next.name)}
+                : {label: String(next.name), location: next.location as LatLng},
         );
     }
 
@@ -328,7 +380,7 @@ async function applyWrite(
         });
     }
 
-    return { entityType: kind.entityType, id: next.id, tombstone: plan.tombstone, next };
+    return { entityType: kind.entityType, id: next.id, tombstone: plan.tombstone, next, mode: plan.mode };
 }
 
 /**
@@ -355,21 +407,21 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
     const pipeIds = new Set(writtenPipes);
     if (deletedNodes.length > 0) {
         const attached = await tx
-            .select({ id: pipes.id })
+            .select({id: pipes.id})
             .from(pipes)
             .where(and(mainLive(pipes), or(inArray(pipes.fromNodeId, deletedNodes), inArray(pipes.toNodeId, deletedNodes))));
         for (const row of attached) pipeIds.add(row.id);
     }
     if (pipeIds.size > 0) {
         const pipeRows = await tx
-            .select({ id: pipes.id, fromNodeId: pipes.fromNodeId, toNodeId: pipes.toNodeId })
+            .select({id: pipes.id, fromNodeId: pipes.fromNodeId, toNodeId: pipes.toNodeId})
             .from(pipes)
             .where(and(mainLive(pipes), inArray(pipes.id, [...pipeIds])));
         const endpointIds = [...new Set(pipeRows.flatMap((p) => [p.fromNodeId, p.toNodeId]))];
         const liveEndpoints = new Set(
             (
                 await tx
-                    .select({ id: nodes.id })
+                    .select({id: nodes.id})
                     .from(nodes)
                     .where(and(mainLive(nodes), inArray(nodes.id, endpointIds)))
             ).map((row) => row.id),
@@ -392,14 +444,14 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
     const nodeIds = new Set(housedNodes);
     if (deletedStructures.length > 0) {
         const housed = await tx
-            .select({ id: nodes.id })
+            .select({id: nodes.id})
             .from(nodes)
             .where(and(mainLive(nodes), inArray(nodes.structureId, deletedStructures)));
         for (const row of housed) nodeIds.add(row.id);
     }
     if (nodeIds.size > 0) {
         const nodeRows = await tx
-            .select({ id: nodes.id, structureId: nodes.structureId })
+            .select({id: nodes.id, structureId: nodes.structureId})
             .from(nodes)
             .where(and(mainLive(nodes), inArray(nodes.id, [...nodeIds])));
         const structureIds = [...new Set(nodeRows.flatMap((n) => (n.structureId ? [n.structureId] : [])))];
@@ -408,7 +460,7 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
                 ? []
                 : (
                     await tx
-                        .select({ id: structures.id })
+                        .select({id: structures.id})
                         .from(structures)
                         .where(and(mainLive(structures), inArray(structures.id, structureIds)))
                 ).map((row) => row.id),
@@ -429,11 +481,11 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
     const dmaIds = new Set(applied.filter((a) => a.entityType === "dma" && !a.tombstone).map((a) => a.id));
     if (deletedNodes.length > 0) {
         const byInlet = await tx
-            .select({ id: dmas.id })
+            .select({id: dmas.id})
             .from(dmas)
             .where(and(mainLive(dmas), inArray(dmas.inletMeterId, deletedNodes)));
         const byValve = await tx
-            .select({ id: dmas.id })
+            .select({id: dmas.id})
             .from(dmas)
             .innerJoin(dmaBoundaryValves, eq(dmaBoundaryValves.dmaVersionId, dmas.versionId))
             .where(and(mainLive(dmas), inArray(dmaBoundaryValves.valveAssetId, deletedNodes)));
@@ -441,7 +493,7 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
     }
     if (dmaIds.size > 0) {
         const dmaRows = await tx
-            .select({ id: dmas.id, versionId: dmas.versionId, inletMeterId: dmas.inletMeterId })
+            .select({id: dmas.id, versionId: dmas.versionId, inletMeterId: dmas.inletMeterId})
             .from(dmas)
             .where(and(mainLive(dmas), inArray(dmas.id, [...dmaIds])));
         const valvesByVersion = await loadBoundaryValves(tx, dmaRows.map((d) => d.versionId));
@@ -451,7 +503,7 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
         const liveTypes = new Map(
             (
                 await tx
-                    .select({ id: nodes.id, type: nodes.type })
+                    .select({id: nodes.id, type: nodes.type})
                     .from(nodes)
                     .where(and(mainLive(nodes), inArray(nodes.id, referenced)))
             ).map((row): [string, string] => [row.id, row.type]),
@@ -481,7 +533,7 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
     // Subnetworks live on main only, so one whose controller was just deleted is left pointing at nothing.
     if (deletedNodes.length > 0) {
         const orphaned = await tx
-            .select({ id: subnetworks.id, controllerNodeId: subnetworks.controllerNodeId })
+            .select({id: subnetworks.id, controllerNodeId: subnetworks.controllerNodeId})
             .from(subnetworks)
             .where(and(eq(subnetworks.organizationId, orgId), inArray(subnetworks.controllerNodeId, deletedNodes)));
         for (const subnetwork of orphaned) {
@@ -491,6 +543,24 @@ async function findViolations(tx: Database, orgId: string, applied: readonly App
                 relatedId: subnetwork.controllerNodeId,
                 message: `Subnetwork ${subnetwork.id} would lose its controller ${subnetwork.controllerNodeId}, which is being deleted`,
             });
+        }
+    }
+
+    // New nodes of a type that needs photo evidence can't go live without at least one uploaded photo.
+    const needPhoto = applied.filter(
+        (a) => a.entityType === "node" && a.mode === "create" && !a.tombstone && NODE_PHOTO_RULE[a.next.type as NodeType] === "required",
+    );
+    if (needPhoto.length > 0) {
+        const have = await photoCounts(tx, orgId, "node", needPhoto.map((a) => a.id));
+        for (const a of needPhoto) {
+            if ((have.get(a.id) ?? 0) === 0) {
+                violations.push({
+                    code: "node-photo-missing",
+                    entityId: a.id,
+                    relatedId: a.id,
+                    message: `${String(a.next.name)} needs at least one photo before it can go live`,
+                });
+            }
         }
     }
 
@@ -506,7 +576,7 @@ export const reconcileRouter = router({
      * walking chains (rather than aggregating every row on the branch) keeps a
      * reused branch name from inheriting an earlier, already-posted round.
      */
-    branches: gisRoleProcedure(...READ_ROLES).query(async ({ ctx }) => {
+    branches: gisRoleProcedure(...READ_ROLES).query(async ({ctx}) => {
         const byBranch = new Map<string, { changes: number; versions: Map<string, AnyRow> }>();
 
         for (const kind of KINDS) {
@@ -529,14 +599,14 @@ export const reconcileRouter = router({
             const byVersion = new Map(onOpenBranches.map((row) => [row.versionId, row]));
 
             for (const head of heads) {
-                const summary = byBranch.get(head.branch) ?? { changes: 0, versions: new Map<string, AnyRow>() };
+                const summary = byBranch.get(head.branch) ?? {changes: 0, versions: new Map<string, AnyRow>()};
                 summary.changes++;
                 for (const version of branchChain(head, byVersion)) summary.versions.set(version.versionId, version);
                 byBranch.set(head.branch, summary);
             }
         }
 
-        const summaries = [...byBranch.entries()].map(([branch, { changes, versions }]) => {
+        const summaries = [...byBranch.entries()].map(([branch, {changes, versions}]) => {
             const rows = [...versions.values()];
             const times = rows.map((v) => v.createdAt.getTime());
             return {
@@ -547,7 +617,13 @@ export const reconcileRouter = router({
                 authorIds: [...new Set(rows.map((v) => v.createdByUserId))],
             };
         });
-        return summaries.sort((a, b) => (b.lastEditAt ?? "").localeCompare(a.lastEditAt ?? ""));
+
+        const authorIds = [...new Set(summaries.flatMap((s) => s.authorIds))];
+        const people = authorIds.length ? await ctx.db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, authorIds)) : [];
+        const nameOf = new Map(people.map((p) => [p.id, p.name]));
+        return summaries
+            .map((s) => ({ ...s, authors: s.authorIds.map((id) => ({ id, name: nameOf.get(id) ?? "Unknown" })) }))
+            .sort((a, b) => (b.lastEditAt ?? "").localeCompare(a.lastEditAt ?? ""));
     }),
 
     /**
@@ -556,18 +632,24 @@ export const reconcileRouter = router({
      * needs the writes applied, and a read shouldn't take locks on main.
      */
     preview: gisRoleProcedure(...READ_ROLES)
-        .input(z.object({ branch: BranchSchema }))
-        .query(async ({ ctx, input }) => {
+        .input(z.object({branch: BranchSchema}))
+        .query(async ({ctx, input}) => {
             assertNotMain(input.branch);
             const entries = await loadEntries(ctx.db, ctx.organizationId, input.branch);
             if (entries.length === 0) {
-                throw new TRPCError({ code: "NOT_FOUND", message: "Nothing to reconcile on that branch" });
+                throw new TRPCError({code: "NOT_FOUND", message: "Nothing to reconcile on that branch"});
             }
-            const entities = entries.map((entry) => ({
+
+            const plans = entries.map((entry) => ({ entry, plan: planFor(entry) }));
+            const photoIds = plans.filter(({ entry, plan }) => needsPhotoEvidence(entry, plan)).map(({ entry }) => entry.branchHead.id);
+            const have = await photoCounts(ctx.db, ctx.organizationId, "node", photoIds);
+            const entities = plans.map(({ entry, plan }) => ({
                 id: entry.branchHead.id,
                 entityType: entry.kind.entityType,
                 name: entityName(entry),
-                ...describePlan(planFor(entry)),
+                ...describePlan(entry, plan),
+                /** A required photo hasn't been uploaded yet: posting would be refused. */
+                needsPhoto: photoIds.includes(entry.branchHead.id) && (have.get(entry.branchHead.id) ?? 0) === 0,
             }));
             return {
                 branch: input.branch,
@@ -577,8 +659,10 @@ export const reconcileRouter = router({
                     writes: entities.filter((e) => e.kind === "write").length,
                     skipped: entities.filter((e) => e.kind === "skip").length,
                     conflicts: entities.filter((e) => e.kind === "conflict").length,
+                    needPhoto: entities.filter((e) => e.needsPhoto).length,
                 },
             };
+
         }),
 
     /**
@@ -598,13 +682,13 @@ export const reconcileRouter = router({
                 resolutions: z.record(z.string(), z.record(z.string(), z.enum(["branch", "main"]))).optional(),
             }),
         )
-        .mutation(async ({ ctx, input }) => {
+        .mutation(async ({ctx, input}) => {
             assertNotMain(input.branch);
             try {
                 return await ctx.db.transaction(async (tx) => {
                     const entries = await loadEntries(tx, ctx.organizationId, input.branch);
                     if (entries.length === 0) {
-                        throw new TRPCError({ code: "NOT_FOUND", message: "Nothing to reconcile on that branch" });
+                        throw new TRPCError({code: "NOT_FOUND", message: "Nothing to reconcile on that branch"});
                     }
                     if (headsToken(entries) !== input.token) {
                         throw new TRPCError({
@@ -622,7 +706,7 @@ export const reconcileRouter = router({
                     if (unresolved.length > 0) {
                         return {
                             status: "conflicts" as const,
-                            conflicts: unresolved.map(({ entry, plan }) => ({
+                            conflicts: unresolved.map(({entry, plan}) => ({
                                 id: entry.branchHead.id,
                                 entityType: entry.kind.entityType,
                                 name: entityName(entry),
@@ -633,12 +717,12 @@ export const reconcileRouter = router({
 
                     // Retire the branch first: if two people post the same branch at once, only
                     // one gets to flip these heads and the other fails here.
-                    for (const { entry } of plans) await retireHead(tx, entry.kind, entry.branchHead.versionId);
+                    for (const {entry} of plans) await retireHead(tx, entry.kind, entry.branchHead.versionId);
 
-                    const summary = { created: 0, fastForwarded: 0, merged: 0, deleted: 0, restored: 0, skipped: 0 };
+                    const summary = {created: 0, fastForwarded: 0, merged: 0, deleted: 0, restored: 0, skipped: 0};
                     const applied: Applied[] = [];
                     for (const kind of KINDS) {
-                        for (const { entry, plan } of plans) {
+                        for (const {entry, plan} of plans) {
                             if (entry.kind !== kind) continue;
                             if (plan.kind !== "write") {
                                 summary.skipped++;
@@ -664,18 +748,18 @@ export const reconcileRouter = router({
                     const violations = await findViolations(tx, ctx.organizationId, applied);
                     if (violations.length > 0) throw new IntegrityFailure(violations);
 
-                    return { status: "posted" as const, summary };
+                    return {status: "posted" as const, summary};
                 });
             } catch (err) {
-                if (err instanceof IntegrityFailure) return { status: "invalid" as const, violations: err.violations };
+                if (err instanceof IntegrityFailure) return {status: "invalid" as const, violations: err.violations};
                 rethrowDbError(err);
             }
         }),
 
     /** Abandon a branch. Its rows stay as history; it just stops being anyone's view of the network. */
     discard: gisRoleProcedure(...POST_ROLES)
-        .input(z.object({ branch: BranchSchema }))
-        .mutation(async ({ ctx, input }) => {
+        .input(z.object({branch: BranchSchema}))
+        .mutation(async ({ctx, input}) => {
             assertNotMain(input.branch);
             const discarded = await ctx.db.transaction(async (tx) => {
                 let total = 0;
@@ -683,7 +767,7 @@ export const reconcileRouter = router({
                     const table = kind.table;
                     const flipped = await tx
                         .update(table)
-                        .set({ isHead: false } as never)
+                        .set({isHead: false} as never)
                         .where(
                             and(
                                 eq(table.organizationId, ctx.organizationId),
@@ -691,14 +775,14 @@ export const reconcileRouter = router({
                                 eq(table.isHead, true),
                             ),
                         )
-                        .returning({ versionId: table.versionId });
+                        .returning({versionId: table.versionId});
                     total += flipped.length;
                 }
                 return total;
             });
             if (discarded === 0) {
-                throw new TRPCError({ code: "NOT_FOUND", message: "Nothing to discard on that branch" });
+                throw new TRPCError({code: "NOT_FOUND", message: "Nothing to discard on that branch"});
             }
-            return { discarded };
+            return {discarded};
         }),
 });

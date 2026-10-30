@@ -8,12 +8,13 @@ import {
     NodeTypeSchema,
     STRUCTURE_ATTACHMENT_RULES,
     type NetworkNode,
-    type NodeType,
+    type NodeType, JunctionSchema,
 } from "@majimap/shared-types";
 import { gisProcedure, gisRoleProcedure, router } from "../trpc";
 import { assertNodeHasNoPipes } from "./pipes";
 import { assertNodeNotUsedByDma } from "./dmas";
 import { assertNodeNotController } from "./subnetworks";
+import { junctionColumns, junctionFromRow } from "./junction";
 import {
     BranchSchema,
     EntityIdSchema,
@@ -44,6 +45,7 @@ export function toNodeDto(row: NodeRow): NodeDto {
         structureId: row.structureId,
         installedAt: toIso(row.installedAt),
         lastInspectedAt: toIso(row.lastInspectedAt),
+        junction: junctionFromRow(row),
     };
 }
 
@@ -59,6 +61,7 @@ const NodePatchSchema = z
         structureId: EntityIdSchema.nullable(),
         installedAt: z.string().datetime().nullable(),
         lastInspectedAt: z.string().datetime().nullable(),
+        junction: JunctionSchema.nullable(),
     })
     .partial()
     .refine((patch) => Object.values(patch).some((v) => v !== undefined), "Patch is empty");
@@ -283,9 +286,13 @@ export const nodesRouter = router({
                 isOpen: z.boolean().nullable().default(null),
                 structureId: EntityIdSchema.nullable().default(null),
                 installedAt: z.string().datetime().nullable().default(null),
+                junction: JunctionSchema.nullable().default(null),
             }),
         )
         .mutation(async ({ctx, input}) => {
+            if (input.type !== "junction" && input.junction) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Only junctions have junction details" });
+            }
             if (input.type !== "valve" && input.isOpen !== null) {
                 throw new TRPCError({code: "BAD_REQUEST", message: "Only valves have an open/closed state"});
             }
@@ -348,6 +355,7 @@ export const nodesRouter = router({
                             isOpen: input.isOpen,
                             structureId: input.structureId,
                             installedAt: fromIso(input.installedAt),
+                            ...junctionColumns(input.junction),
                         })
                         .returning();
 
@@ -380,22 +388,28 @@ export const nodesRouter = router({
                         branch: input.branch,
                         baseVersionId: input.baseVersionId,
                         tombstone: false,
-                        patch: compact({
-                            name: patch.name,
-                            location: patch.location,
-                            condition: patch.condition,
-                            isOpen: patch.isOpen,
-                            structureId: patch.structureId,
-                            installedAt: patch.installedAt === undefined ? undefined : fromIso(patch.installedAt),
-                            lastInspectedAt:
-                                patch.lastInspectedAt === undefined ? undefined : fromIso(patch.lastInspectedAt),
-                        }),
+                        patch: {
+                            ...compact({
+                                name: patch.name,
+                                location: patch.location,
+                                condition: patch.condition,
+                                isOpen: patch.isOpen,
+                                structureId: patch.structureId,
+                                installedAt: patch.installedAt === undefined ? undefined : fromIso(patch.installedAt),
+                                lastInspectedAt:
+                                    patch.lastInspectedAt === undefined ? undefined : fromIso(patch.lastInspectedAt),
+                            }),
+                            ...(patch.junction !== undefined ? junctionColumns(patch.junction) : {}),
+                        },
                     });
 
                     // Rules that depend on the merged result, checked after the fact — the
                     // transaction rolls back if any of them fail.
                     if (next.type !== "valve" && next.isOpen !== null) {
                         throw new TRPCError({code: "BAD_REQUEST", message: "Only valves have an open/closed state"});
+                    }
+                    if (next.type !== "junction" && next.mainSizeMm !== null) {
+                        throw new TRPCError({ code: "BAD_REQUEST", message: "Only junctions have junction details" });
                     }
                     if (patch.structureId) {
                         await assertStructureAllows(tx, ctx.organizationId, input.branch, next.type, patch.structureId);

@@ -67,6 +67,14 @@ export function rethrowDbError(err: unknown): never {
         });
     }
 
+    if (chain.some((e) => e.code === "23514")) {
+        throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "That value isn't allowed — check the sizes and details and try again",
+            cause: err,
+        });
+    }
+
     const rule = chain.find((e) =>
         /may not be housed|does not reference an existing structure/.test(e.message ?? ""),
     );

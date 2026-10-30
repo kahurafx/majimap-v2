@@ -15,3 +15,7 @@ export * from "./gis/tiers";
 export * from "./gis/dmas";
 export * from "./gis/roles";
 export * from "./gis/logs";
+
+// WORK ORDERS MODULE
+export * from "./work-orders/shared";
+export * from "./work-orders/work-orders";
